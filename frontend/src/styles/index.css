@@ -1,0 +1,626 @@
+@import 'tailwindcss';
+
+/* Only StudyPilot tokens exist: Tailwind's default palette, shadows and blur are removed on purpose. */
+@theme {
+  --color-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --blur-*: initial;
+
+  --color-ink: #0c0f14;
+  --color-surface-1: #12161d;
+  --color-surface-2: #181d26;
+  --color-line: #252c37;
+  --color-line-strong: #343d4b;
+  --color-text: #e7eaee;
+  --color-text-2: #a3acb9;
+  --color-text-3: #7d8796;
+  --color-signal: #6cc4dc;
+  --color-amber: #e9b44c;
+  --color-correct: #5dbb8a;
+  --color-incorrect: #e4705f;
+
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4 Variable', 'Iowan Old Style', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.375rem;
+  --text-md: 1rem;
+  --text-md--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.25rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.625rem;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    background: var(--color-ink);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--color-ink);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-signal) 30%, transparent);
+    color: var(--color-text);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  button,
+  [role='button'] {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  dialog::backdrop {
+    background: color-mix(in srgb, var(--color-ink) 72%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Long-form reading surface: notes, summaries, answers, page text. */
+  .reading {
+    font-family: var(--font-serif);
+    font-size: 1.125rem;
+    line-height: 1.65;
+    font-optical-sizing: auto;
+    max-width: 68ch;
+    color: var(--color-text);
+  }
+  .reading p + p {
+    margin-top: 0.9em;
+  }
+  .reading code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+  }
+  .reading pre {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-1);
+    overflow-x: auto;
+  }
+
+  /* Small uppercase mono label used for metadata and section eyebrows. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-3);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@utility tint-signal {
+  background-color: color-mix(in srgb, var(--color-signal) 12%, transparent);
+}
+@utility tint-amber {
+  background-color: color-mix(in srgb, var(--color-amber) 12%, transparent);
+}
+@utility tint-correct {
+  background-color: color-mix(in srgb, var(--color-correct) 12%, transparent);
+}
+@utility tint-incorrect {
+  background-color: color-mix(in srgb, var(--color-incorrect) 12%, transparent);
+}
+
+@keyframes indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/* ---------- Knowledge canvas: DOM labels over the 3D scene (positioned imperatively) ---------- */
+.kc-label {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-ink) 82%, transparent);
+  opacity: 0;
+  transition: opacity 150ms var(--ease-standard), color 150ms var(--ease-standard);
+  will-change: transform;
+}
+.kc-label[data-state='shown'] {
+  opacity: 1;
+}
+.kc-label[data-state='dim'] {
+  opacity: 0.45;
+}
+.kc-label[data-state='selected'] {
+  opacity: 1;
+  color: var(--color-signal);
+  outline: 1px solid color-mix(in srgb, var(--color-signal) 55%, transparent);
+}
+
+/* ---------- 2D concept map (fallback / placeholder) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .kc2-pop {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: kc2-pop 600ms var(--ease-enter) both;
+  }
+  .kc2-draw {
+    stroke-dasharray: 1;
+    animation: kc2-draw 360ms var(--ease-standard) both;
+  }
+  .kc2-rise {
+    animation: kc2-rise 700ms var(--ease-enter) both;
+  }
+  .kc2-scan {
+    animation: kc2-scan 1.6s ease-in-out infinite;
+  }
+}
+@keyframes kc2-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes kc2-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes kc2-rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes kc2-scan {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes note-flash {
+  from {
+    background-color: color-mix(in srgb, var(--color-signal) 14%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+/* ===================== Visual polish layer ===================== */
+:root {
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Deep navy page with faint coloured light in two corners (fixed, so it never repaints on scroll). */
+body {
+  background-color: #0a0d13;
+  background-image:
+    radial-gradient(1100px 700px at 85% -10%, rgb(108 196 220 / 0.07), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgb(233 180 76 / 0.045), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Raised panels: hairline plus a soft layered shadow and a faint top highlight. */
+.panel-elevated {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 18px 48px -18px rgb(0 0 0 / 0.65);
+}
+
+/* The map stage: teal light behind the graph, a star-map dot grid and a vignette into the page. */
+.canvas-atmosphere {
+  background-color: #0b0f17;
+  background-image:
+    radial-gradient(60% 55% at 50% 45%, rgb(108 196 220 / 0.11), transparent 70%),
+    radial-gradient(35% 35% at 88% 92%, rgb(233 180 76 / 0.06), transparent 70%),
+    radial-gradient(rgb(163 172 185 / 0.13) 1px, transparent 1.2px);
+  background-size: auto, auto, 22px 22px;
+}
+.canvas-atmosphere::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px 30px rgb(8 11 17 / 0.85);
+}
+
+.glow-signal {
+  box-shadow: 0 0 0 3px rgb(108 196 220 / 0.18), 0 0 14px 2px rgb(108 196 220 / 0.55);
+}
+.glow-amber {
+  box-shadow: 0 0 0 3px rgb(233 180 76 / 0.18), 0 0 14px 2px rgb(233 180 76 / 0.5);
+}
+
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.375rem;
+  padding: 0 0.6rem;
+  border-width: 1px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgb(255 255 255 / 0.02);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 1.875rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: var(--color-text-2);
+  background: rgb(255 255 255 / 0.015);
+  transition:
+    transform 200ms var(--ease-out-soft),
+    border-color 200ms var(--ease-out-soft),
+    color 200ms var(--ease-out-soft),
+    box-shadow 200ms var(--ease-out-soft);
+}
+.chip:hover {
+  transform: translateY(-1px);
+  color: var(--color-text);
+  border-color: rgb(108 196 220 / 0.6);
+  box-shadow: 0 4px 14px -6px rgb(108 196 220 / 0.55);
+}
+
+.btn-glow {
+  box-shadow: 0 0 0 1px rgb(108 196 220 / 0.35), 0 6px 20px -6px rgb(108 196 220 / 0.6);
+}
+.btn-glow:hover {
+  box-shadow: 0 0 0 1px rgb(108 196 220 / 0.55), 0 8px 26px -6px rgb(108 196 220 / 0.75);
+}
+
+.list-row {
+  transition: background-color 180ms var(--ease-out-soft), color 180ms var(--ease-out-soft);
+}
+.list-row-active {
+  background: rgb(108 196 220 / 0.09);
+}
+.list-row-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  bottom: 0.45rem;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-signal);
+  box-shadow: 0 0 10px rgb(108 196 220 / 0.8);
+}
+
+/* Slim scrollbars and soft fade at the top and bottom of scroll areas. */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+}
+.fade-y {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 16px), transparent 100%);
+}
+
+/* Staggered entrance; reduced motion collapses it via the global rule above. */
+@media (prefers-reduced-motion: no-preference) {
+  .stagger-in {
+    animation: stagger-in 420ms var(--ease-out-soft) both;
+  }
+}
+@keyframes stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Skeleton shimmer. */
+.shimmer {
+  background-color: var(--color-surface-2);
+  background-image: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.05) 50%, transparent 80%);
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .shimmer {
+    animation: shimmer 1.4s linear infinite;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* Node hover tooltip on the 3D map. */
+.kc-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  min-width: 10rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-surface-1) 96%, transparent);
+  color: var(--color-text);
+  box-shadow: var(--card-shadow);
+  opacity: 0;
+  transition: opacity 150ms var(--ease-out-soft);
+}
+.kc-tooltip[data-open='true'] {
+  opacity: 1;
+}
+
+mark.match {
+  background: transparent;
+  color: var(--color-signal);
+  font-weight: 600;
+}
+
+/* ===================== Light theme (default) ===================== */
+/* The @theme block above holds the dark palette. Light overrides the same variables, so every
+   utility (bg-surface-1, text-text-2…) switches theme without touching components. */
+:root:not([data-theme='dark']) {
+  color-scheme: light;
+  --color-ink: #f4f6fb;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #eef2f8;
+  --color-line: #e2e7f0;
+  --color-line-strong: #cbd3e1;
+  --color-text: #172033;
+  --color-text-2: #475167;
+  --color-text-3: #5b6479;
+  --color-signal: #08718b;
+  --color-amber: #a15c07;
+  --color-correct: #157f3d;
+  --color-incorrect: #c0392b;
+  --card-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 10px 30px -14px rgb(16 24 40 / 0.16);
+}
+:root:not([data-theme='dark']) body {
+  background-color: #f4f6fb;
+  background-image:
+    radial-gradient(900px 600px at 100% -10%, rgb(205 225 248 / 0.7), transparent 60%),
+    radial-gradient(800px 600px at -10% 110%, rgb(251 228 239 / 0.6), transparent 60%);
+}
+:root[data-theme='dark'] {
+  --card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 48px -18px rgb(0 0 0 / 0.65);
+}
+
+/* The knowledge-map stage stays dark in both themes so the glowing graph reads well. */
+.stage-dark {
+  color-scheme: dark;
+  --color-ink: #0c0f14;
+  --color-surface-1: #12161d;
+  --color-surface-2: #181d26;
+  --color-line: #252c37;
+  --color-line-strong: #343d4b;
+  --color-text: #e7eaee;
+  --color-text-2: #a3acb9;
+  --color-text-3: #7d8796;
+  --color-signal: #6cc4dc;
+  --color-amber: #e9b44c;
+  --color-correct: #5dbb8a;
+  --color-incorrect: #e4705f;
+  color: var(--color-text);
+}
+
+/* Pastel tiles (light theme) and their deep text colours; muted versions in dark. */
+:root {
+  --tile-blue: #dceaf8;
+  --tile-blue-ink: #1d4e89;
+  --tile-lavender: #e7e4fb;
+  --tile-lavender-ink: #4c3f9e;
+  --tile-pink: #fbe4ef;
+  --tile-pink-ink: #9d2f5f;
+  --tile-mint: #ddf4e7;
+  --tile-mint-ink: #1e6b45;
+  --tile-butter: #fcf0d2;
+  --tile-butter-ink: #7a4f00;
+}
+:root[data-theme='dark'] {
+  --tile-blue: #172433;
+  --tile-blue-ink: #9cc7f0;
+  --tile-lavender: #1f1d33;
+  --tile-lavender-ink: #bdb4f5;
+  --tile-pink: #2b1a24;
+  --tile-pink-ink: #f1a9c8;
+  --tile-mint: #15271e;
+  --tile-mint-ink: #9fdcb9;
+  --tile-butter: #2a2414;
+  --tile-butter-ink: #f0cf7e;
+}
+.tile-blue {
+  background: var(--tile-blue);
+  color: var(--tile-blue-ink);
+}
+.tile-lavender {
+  background: var(--tile-lavender);
+  color: var(--tile-lavender-ink);
+}
+.tile-pink {
+  background: var(--tile-pink);
+  color: var(--tile-pink-ink);
+}
+.tile-mint {
+  background: var(--tile-mint);
+  color: var(--tile-mint-ink);
+}
+.tile-butter {
+  background: var(--tile-butter);
+  color: var(--tile-butter-ink);
+}
+
+/* Rounded soft card used across screens. */
+.card {
+  border: 1px solid var(--color-line);
+  border-radius: 22px;
+  background: var(--color-surface-1);
+  box-shadow: var(--card-shadow);
+}
+.panel-elevated {
+  box-shadow: var(--card-shadow);
+}
+
+/* Activity bars: one validated series colour per theme (passes lightness, chroma and contrast checks). */
+:root {
+  --chart-bar: #0891b2;
+}
+:root[data-theme='dark'] {
+  --chart-bar: #1497bc;
+}
+.chart-bar {
+  background: var(--chart-bar);
+}
+
+/* Source Serif defaults to old-style figures ("Week o4"); titles read better with lining numerals. */
+.font-serif,
+.reading {
+  font-variant-numeric: lining-nums;
+}
+
+
+/* ===================== Map stage per theme ===================== */
+/* Node colours for the 2D map; the 3D scene uses the same values (src/canvas/palette.ts). */
+:root {
+  --node-key: #e9a93a;
+  --node-2: #8e86e0;
+  --node-1: #7fa6d6;
+  --node-selected: #0891b2;
+}
+:root[data-theme='dark'] {
+  --node-key: #e9b44c;
+  --node-2: #c3cbd6;
+  --node-1: #8a95a5;
+  --node-selected: #6cc4dc;
+}
+
+/* Light stage: soft pastel light (the dashboard's blue, lavender and butter tiles) on near-white. */
+:root:not([data-theme='dark']) .canvas-atmosphere {
+  background-color: #f3f6fb;
+  background-image:
+    radial-gradient(55% 50% at 50% 42%, rgb(220 234 248 / 0.95), transparent 72%),
+    radial-gradient(35% 40% at 12% 85%, rgb(231 228 251 / 0.9), transparent 70%),
+    radial-gradient(30% 35% at 90% 90%, rgb(252 240 210 / 0.85), transparent 70%),
+    radial-gradient(rgb(91 100 121 / 0.14) 1px, transparent 1.2px);
+  background-size: auto, auto, auto, 22px 22px;
+}
+:root:not([data-theme='dark']) .canvas-atmosphere::after {
+  box-shadow: inset 0 0 70px 18px rgb(243 246 251 / 0.9);
+}
+:root:not([data-theme='dark']) .kc-label {
+  background: rgb(255 255 255 / 0.88);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.08);
+}
+
+/* Notes: paragraph prose with generous line height (key terms in bold, emphasis in italics). */
+.note-prose {
+  max-width: 72ch;
+  font-size: 1.0625rem;
+  line-height: 1.9;
+  color: var(--color-text-2);
+}
+.note-prose p + p {
+  margin-top: 1.1em;
+}
+.note-prose strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+.note-prose em {
+  color: var(--color-text);
+}
+.note-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+}
